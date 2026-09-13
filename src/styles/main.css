@@ -1,0 +1,80 @@
+:root {
+  color-scheme: dark;
+
+  --bg: #08080a;
+  --bg-glow: #16161c;
+  --panel: #131318;
+  --line: #2a2a32;
+  --tile-face: #3a3a41;
+  --tile-face-top: #48484f;
+  --accent: #f5b82e;
+  --accent-deep: #dd9a05;
+  --success: #7bd88f;
+  --danger: #e5484d;
+  --text: #f3f3f6;
+  --muted: #8b8b95;
+
+  --radius-tile: clamp(9px, 2.4vw, 14px);
+  --radius-panel: 18px;
+  --board-width: min(92vw, 460px);
+  --board-gap: clamp(6px, 1.8vw, 12px);
+
+  --flip-duration: 420ms;
+  --ease-out: cubic-bezier(0.22, 0.85, 0.28, 1);
+
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'SF Pro Text',
+    'Segoe UI',
+    'Noto Sans TC',
+    'PingFang TC',
+    'Microsoft JhengHei',
+    sans-serif;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: radial-gradient(120% 80% at 50% -10%, var(--bg-glow) 0%, transparent 60%), var(--bg);
+  color: var(--text);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --flip-duration: 1ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
