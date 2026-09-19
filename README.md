@@ -2,6 +2,7 @@
 
 黃色格子亮 3 秒，記住它們的位置；棋盤轉暗後把剛才亮過的格子全部點回來。
 共 8 關，從 4 格到 11 格，點錯只扣分、不扣生命。
+同一關連續點錯 2 次，還沒找到的格子會再閃一次當提示。
 
 Vite + Vue 3 + TypeScript + 原生 CSS，沒有 UI 框架、沒有音檔。
 
@@ -27,6 +28,7 @@ src/
 │  └─ logic.test.ts  對應的單元測試
 ├─ composables/
 │  ├─ useGame.ts     遊戲狀態機（idle → memorize → recall → …）
+│  ├─ useGame.test.ts 狀態機的單元測試（連錯提示，用假時間）
 │  ├─ useSound.ts    Web Audio 即時合成音效，不需要任何音檔
 │  └─ useI18n.ts     中／英雙語文案
 ├─ components/
@@ -52,8 +54,9 @@ src/
 ## 想改難度？
 
 `src/game/config.ts` 裡：`START_TILES`（起始格數）、`TOTAL_LEVELS`（關卡數）、
-`MEMORIZE_MS`（記憶秒數）、`BOARD_SIZE`（棋盤邊長）。改完 `npm test` 會驗證
-最後一關的格數仍然少於總格數。
+`MEMORIZE_MS`（記憶秒數）、`BOARD_SIZE`（棋盤邊長）、`HINT_AFTER_MISSES`（連錯幾次
+給提示）、`HINT_MS`（提示亮多久）。改完 `npm test` 會驗證最後一關的格數仍然少於
+總格數，以及連錯提示的觸發與收回。
 
 ## 部署
 

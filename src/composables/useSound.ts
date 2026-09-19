@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { STORAGE_KEYS } from '@/game/config'
 
-export type SoundName = 'reveal' | 'hide' | 'correct' | 'wrong' | 'levelClear' | 'complete'
+export type SoundName = 'reveal' | 'hide' | 'correct' | 'wrong' | 'hint' | 'levelClear' | 'complete'
 
 type Note = {
   /** 頻率（Hz）。 */
@@ -24,6 +24,11 @@ const PATTERNS: Record<SoundName, Note[]> = {
     { freq: 1320, at: 0.06, dur: 0.1, gain: 0.16 },
   ],
   wrong: [{ freq: 150, at: 0, dur: 0.2, gain: 0.22, type: 'sawtooth' }],
+  // 排在 wrong 的低音之後，兩個上行的柔音，像「叮叮」提醒一下
+  hint: [
+    { freq: 740, at: 0.22, dur: 0.09, gain: 0.14, type: 'triangle' },
+    { freq: 988, at: 0.32, dur: 0.16, gain: 0.14, type: 'triangle' },
+  ],
   levelClear: [
     { freq: 523.25, at: 0, dur: 0.1, gain: 0.18 },
     { freq: 659.25, at: 0.09, dur: 0.1, gain: 0.18 },

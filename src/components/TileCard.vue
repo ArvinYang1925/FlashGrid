@@ -15,8 +15,11 @@ const emit = defineEmits<{ select: [index: number] }>()
 /** dark 以外的狀態都翻到背面（有顏色的那一面）。 */
 const faceUp = computed(() => props.state !== 'dark')
 
-// 只有翻開時才需要延遲；蓋回去時整盤要一起變暗，比較有「時間到」的感覺
-const delay = computed(() => (faceUp.value ? `${props.stagger}ms` : '0ms'))
+// 只有翻開時才需要延遲；蓋回去時整盤要一起變暗，比較有「時間到」的感覺。
+// 提示只閃一下，也不加延遲，否則角落的格子還沒翻開就要蓋回去了。
+const delay = computed(() =>
+  faceUp.value && props.state !== 'hint' ? `${props.stagger}ms` : '0ms',
+)
 </script>
 
 <template>
@@ -94,6 +97,23 @@ const delay = computed(() => (faceUp.value ? `${props.stagger}ms` : '0ms'))
 
 .tile--lit .tile__face--back {
   box-shadow: 0 6px 22px rgb(245 184 46 / 26%);
+}
+
+/* 提示：更亮的黃色加呼吸光圈，跟記憶階段的 lit 區分開來 */
+.tile--hint .tile__face--back {
+  background: linear-gradient(160deg, #ffe9a8, var(--accent));
+  animation: hint-pulse 380ms ease-in-out infinite alternate;
+}
+
+@keyframes hint-pulse {
+  from {
+    box-shadow: 0 0 0 0 rgb(245 184 46 / 0%);
+  }
+  to {
+    box-shadow:
+      0 0 0 4px rgb(245 184 46 / 45%),
+      0 8px 24px rgb(245 184 46 / 30%);
+  }
 }
 
 /* 可點的時候給一點回饋，作答階段才會生效 */

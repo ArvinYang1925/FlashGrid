@@ -21,6 +21,7 @@ const {
   tileStates,
   boardInteractive,
   remaining,
+  hintActive,
   rank,
   start,
   selectTile,
@@ -33,7 +34,7 @@ const prompt = computed(() => {
     case 'memorize':
       return t.value('memorize')
     case 'recall':
-      return t.value('recall')
+      return hintActive.value ? t.value('hintShown') : t.value('recall')
     case 'levelClear':
       return t.value('levelClear')
     default:
@@ -55,7 +56,7 @@ const hint = computed(() => {
     <HudBar :level="level" :score="score" :best="best" :misses="totalErrors" />
 
     <section class="stage">
-      <div class="prompt" :class="`prompt--${phase}`">
+      <div class="prompt" :class="[`prompt--${phase}`, { 'prompt--hint': hintActive }]">
         <span class="prompt__dot" aria-hidden="true" />
         <span class="prompt__text">{{ prompt }}</span>
         <span v-if="hint" class="prompt__hint">{{ hint }}</span>
@@ -145,6 +146,16 @@ const hint = computed(() => {
 .prompt--recall .prompt__dot {
   background: var(--success);
   box-shadow: 0 0 0 4px rgb(123 216 143 / 16%);
+}
+
+.prompt--hint .prompt__dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgb(245 184 46 / 18%);
+  animation: pulse 380ms ease-in-out infinite;
+}
+
+.prompt--hint .prompt__text {
+  color: var(--accent);
 }
 
 .prompt--ready .prompt__dot {

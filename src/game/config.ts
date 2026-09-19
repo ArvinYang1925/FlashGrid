@@ -19,6 +19,12 @@ export const COUNTDOWN_MS = 600
 /** 點錯之後紅色提示殘留的時間（毫秒）。 */
 export const WRONG_FLASH_MS = 420
 
+/** 同一關「連續」點錯這麼多次，就把還沒找到的格子再閃一次當提示；點對就重新計算。 */
+export const HINT_AFTER_MISSES = 2
+
+/** 提示亮起的時間（毫秒）。要比翻牌動畫（--flip-duration）長，格子才來得及翻開讓人看到。 */
+export const HINT_MS = 900
+
 /** 過關動畫停留時間（毫秒）。 */
 export const LEVEL_CLEAR_MS = 900
 

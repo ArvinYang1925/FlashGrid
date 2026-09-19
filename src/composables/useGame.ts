@@ -1,6 +1,8 @@
 import { computed, onScopeDispose, ref, shallowRef } from 'vue'
 import {
   COUNTDOWN_MS,
+  HINT_AFTER_MISSES,
+  HINT_MS,
   LEVEL_CLEAR_MS,
   MEMORIZE_MS,
   STORAGE_KEYS,
@@ -21,8 +23,11 @@ import { useSound } from './useSound'
  */
 export type Phase = 'idle' | 'ready' | 'memorize' | 'recall' | 'levelClear' | 'finished'
 
-/** 單一格子在畫面上的狀態。 */
-export type TileState = 'dark' | 'lit' | 'found' | 'wrong'
+/**
+ * 單一格子在畫面上的狀態。
+ * hint 是連錯之後「還沒找到的正確格再閃一次」，看起來像 lit 但只維持 HINT_MS。
+ */
+export type TileState = 'dark' | 'lit' | 'found' | 'wrong' | 'hint'
 
 function loadBest(): number {
   try {
@@ -59,6 +64,13 @@ export function useGame() {
   const found = ref<Set<number>>(new Set())
   const wrongFlash = ref<Set<number>>(new Set())
 
+  /** 提示中：還沒找到的正確格會暫時亮起。 */
+  const hintActive = ref(false)
+
+  /** 這一關目前連續點錯幾次；點對或提示過就歸零。 */
+  let missStreak = 0
+  let hintTimer: ReturnType<typeof setTimeout> | null = null
+
   let levelStartedAt = 0
   let runStartedAt = 0
   const timers = new Set<ReturnType<typeof setTimeout>>()
@@ -70,6 +82,11 @@ export function useGame() {
     }, ms)
     timers.add(id)
     return id
+  }
+
+  function cancel(id: ReturnType<typeof setTimeout>) {
+    clearTimeout(id)
+    timers.delete(id)
   }
 
   function clearTimers() {
@@ -88,6 +105,7 @@ export function useGame() {
 
     return Array.from({ length: TOTAL_CELLS }, (_, i) => {
       if (showAnswer && targets.value.has(i)) return 'lit'
+      if (hintActive.value && targets.value.has(i) && !found.value.has(i)) return 'hint'
       if (wrongFlash.value.has(i)) return 'wrong'
       if (found.value.has(i)) return 'found'
       return 'dark'
@@ -97,8 +115,30 @@ export function useGame() {
   /** 只有作答階段才接受點擊。 */
   const boardInteractive = computed(() => phase.value === 'recall')
 
+  /** 把還沒找到的正確格再亮一下，HINT_MS 之後自動暗回去。 */
+  function showHint() {
+    hideHint()
+    hintActive.value = true
+    play('hint')
+
+    hintTimer = later(() => {
+      hintTimer = null
+      hintActive.value = false
+    }, HINT_MS)
+  }
+
+  function hideHint() {
+    if (hintTimer) {
+      cancel(hintTimer)
+      hintTimer = null
+    }
+    hintActive.value = false
+  }
+
   function beginLevel() {
     clearTimers()
+    hideHint()
+    missStreak = 0
     found.value = new Set()
     wrongFlash.value = new Set()
     levelErrors.value = 0
@@ -151,6 +191,7 @@ export function useGame() {
 
     lastLevelScore.value = gained
     score.value += gained
+    hideHint()
     phase.value = 'levelClear'
     play('levelClear')
 
@@ -171,6 +212,7 @@ export function useGame() {
     if (targets.value.has(index)) {
       // Set 是 ref 的值，要換成新的物件才會觸發更新
       found.value = new Set(found.value).add(index)
+      missStreak = 0
       play('correct')
 
       if (found.value.size === targets.value.size) completeLevel()
@@ -188,6 +230,13 @@ export function useGame() {
       next.delete(index)
       wrongFlash.value = next
     }, WRONG_FLASH_MS)
+
+    // 連錯太多次就把答案再閃一次；提示過後重新計算，避免一路被餵答案
+    missStreak += 1
+    if (missStreak >= HINT_AFTER_MISSES) {
+      missStreak = 0
+      showHint()
+    }
   }
 
   function reset() {
@@ -200,6 +249,8 @@ export function useGame() {
     targets.value = new Set()
     found.value = new Set()
     wrongFlash.value = new Set()
+    hideHint()
+    missStreak = 0
   }
 
   /** 本局累積要記的總格數，用來換算評價。 */
@@ -222,6 +273,7 @@ export function useGame() {
     isNewBest,
     totalTimeMs,
     tileStates,
+    hintActive,
     boardInteractive,
     tilesThisLevel,
     remaining,

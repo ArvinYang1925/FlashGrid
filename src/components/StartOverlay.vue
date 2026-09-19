@@ -16,6 +16,7 @@ const { t } = useI18n()
         <li>{{ t('howTo1') }}</li>
         <li>{{ t('howTo2') }}</li>
         <li>{{ t('howTo3') }}</li>
+        <li>{{ t('howTo4') }}</li>
       </ol>
 
       <button class="primary" type="button" @click="$emit('start')">{{ t('start') }}</button>
