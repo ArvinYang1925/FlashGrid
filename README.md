@@ -1,5 +1,7 @@
 # FlashGrid 閃記方格
 
+**線上試玩：<https://arvinyang1925.github.io/FlashGrid/>**
+
 黃色格子亮 3 秒，記住它們的位置；棋盤轉暗後把剛才亮過的格子全部點回來。
 共 8 關，從 4 格到 11 格，點錯只扣分、不扣生命。
 同一關連續點錯 2 次，還沒找到的格子會再閃一次當提示。
@@ -60,6 +62,7 @@ src/
 
 ## 部署
 
-push 到 `main` 後由 `.github/workflows/deploy.yml` 自動建置並發佈到 GitHub Pages
-（需先在 repo 的 Settings → Pages 把 Source 設成 GitHub Actions）。
+push 到 `main` 後由 `.github/workflows/deploy.yml` 自動建置並發佈到 GitHub Pages：
+<https://arvinyang1925.github.io/FlashGrid/>
+（repo 的 Settings → Pages 已把 Source 設成 GitHub Actions，換 repo 時要重設一次）。
 `vite.config.ts` 用相對 `base`，子路徑部署不用再改設定。
