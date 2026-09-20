@@ -1,17 +1,50 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 import { useSound } from '@/composables/useSound'
-import { TOTAL_LEVELS } from '@/game/config'
+import type { Mode } from '@/game/config'
 
-defineProps<{
+const props = defineProps<{
+  mode: Mode
   level: number
+  totalLevels: number | null
   score: number
   best: number
+  bestLevel: number
   misses: number
+  missesLeft: number | null
 }>()
 
 const { locale, toggleLocale, t } = useI18n()
 const { muted, toggleMute } = useSound()
+
+/** 分數變動時彈一下，讓連擊拿到的分看得出來。 */
+const bumping = ref(false)
+let bumpTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  () => props.score,
+  (next, previous) => {
+    if (next <= previous) return
+
+    bumping.value = false
+    // 強制讓瀏覽器重新開始動畫，連續得分才不會只跳第一次
+    requestAnimationFrame(() => {
+      bumping.value = true
+    })
+
+    if (bumpTimer) clearTimeout(bumpTimer)
+    bumpTimer = setTimeout(() => {
+      bumping.value = false
+      bumpTimer = null
+    }, 400)
+  },
+)
+
+const isEndless = computed(() => props.mode === 'endless')
+
+const levelText = computed(() => props.level.toLocaleString())
+const levelSub = computed(() => (props.totalLevels === null ? '' : `/${props.totalLevels}`))
 </script>
 
 <template>
@@ -65,18 +98,30 @@ const { muted, toggleMute } = useSound()
       <div class="stat">
         <dt>{{ t('level') }}</dt>
         <dd>
-          {{ level }}<span class="stat__sub">/{{ TOTAL_LEVELS }}</span>
+          {{ levelText }}<span v-if="levelSub" class="stat__sub">{{ levelSub }}</span>
         </dd>
       </div>
       <div class="stat">
         <dt>{{ t('score') }}</dt>
-        <dd>{{ score.toLocaleString() }}</dd>
+        <dd :class="{ 'stat--bump': bumping }">{{ score.toLocaleString() }}</dd>
       </div>
-      <div class="stat">
+
+      <div v-if="isEndless" class="stat">
+        <dt>{{ t('bestLevel') }}</dt>
+        <dd>{{ bestLevel }}</dd>
+      </div>
+      <div v-else class="stat">
         <dt>{{ t('best') }}</dt>
         <dd>{{ best.toLocaleString() }}</dd>
       </div>
-      <div class="stat">
+
+      <div v-if="isEndless" class="stat">
+        <dt>{{ t('lives') }}</dt>
+        <dd :class="{ 'stat--warn': missesLeft !== null && missesLeft <= 1 }">
+          {{ missesLeft }}
+        </dd>
+      </div>
+      <div v-else class="stat">
         <dt>{{ t('misses') }}</dt>
         <dd :class="{ 'stat--warn': misses > 0 }">{{ misses }}</dd>
       </div>
@@ -185,5 +230,16 @@ const { muted, toggleMute } = useSound()
 
 .stat--warn {
   color: var(--danger);
+}
+
+.stat--bump {
+  animation: bump 380ms var(--ease-out);
+}
+
+@keyframes bump {
+  40% {
+    transform: scale(1.22);
+    color: var(--accent);
+  }
 }
 </style>

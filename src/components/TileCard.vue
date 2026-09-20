@@ -116,6 +116,28 @@ const delay = computed(() =>
   }
 }
 
+/* 答對的瞬間往外擴一圈光，之後就靜靜留著 */
+.tile__face--back::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.tile--found .tile__face--back::after {
+  animation: tile-pop 520ms var(--ease-out);
+}
+
+@keyframes tile-pop {
+  from {
+    box-shadow: 0 0 0 0 rgb(255 240 200 / 80%);
+  }
+  to {
+    box-shadow: 0 0 0 20px rgb(255 240 200 / 0%);
+  }
+}
+
 /* 可點的時候給一點回饋，作答階段才會生效 */
 .tile:not(:disabled):hover .tile__face--front {
   background: linear-gradient(160deg, #53535c, #42424a);

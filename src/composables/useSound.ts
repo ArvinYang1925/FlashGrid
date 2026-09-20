@@ -1,7 +1,8 @@
 import { ref } from 'vue'
 import { STORAGE_KEYS } from '@/game/config'
 
-export type SoundName = 'reveal' | 'hide' | 'correct' | 'wrong' | 'hint' | 'levelClear' | 'complete'
+export type SoundName =
+  'reveal' | 'hide' | 'correct' | 'wrong' | 'hint' | 'levelClear' | 'complete' | 'gameOver'
 
 type Note = {
   /** 頻率（Hz）。 */
@@ -40,6 +41,13 @@ const PATTERNS: Record<SoundName, Note[]> = {
     { freq: 783.99, at: 0.22, dur: 0.12, gain: 0.2 },
     { freq: 1046.5, at: 0.33, dur: 0.32, gain: 0.22 },
   ],
+  // 失誤用完：四個下行音，跟過關的上行剛好相反
+  gameOver: [
+    { freq: 392, at: 0, dur: 0.14, gain: 0.2, type: 'triangle' },
+    { freq: 329.63, at: 0.13, dur: 0.14, gain: 0.2, type: 'triangle' },
+    { freq: 261.63, at: 0.26, dur: 0.18, gain: 0.2, type: 'triangle' },
+    { freq: 196, at: 0.42, dur: 0.4, gain: 0.22, type: 'sine' },
+  ],
 }
 
 function loadMuted(): boolean {
@@ -71,13 +79,17 @@ function getContext(): AudioContext | null {
 }
 
 export function useSound() {
-  function play(name: SoundName) {
+  /**
+   * 播一個音效。`semitones` 會把整組音往上移，連擊愈高音愈高。
+   */
+  function play(name: SoundName, semitones = 0) {
     if (muted.value) return
 
     const audio = getContext()
     if (!audio) return
 
     const now = audio.currentTime
+    const ratio = 2 ** (semitones / 12)
 
     for (const note of PATTERNS[name]) {
       const osc = audio.createOscillator()
@@ -87,7 +99,7 @@ export function useSound() {
       const end = start + note.dur
 
       osc.type = note.type ?? 'square'
-      osc.frequency.setValueAtTime(note.freq, start)
+      osc.frequency.setValueAtTime(note.freq * ratio, start)
 
       // 極短的 attack + 指數 decay，避免爆音
       amp.gain.setValueAtTime(0.0001, start)

@@ -2,18 +2,29 @@
 
 **線上試玩：<https://arvinyang1925.github.io/FlashGrid/>**
 
-黃色格子亮 3 秒，記住它們的位置；棋盤轉暗後把剛才亮過的格子全部點回來。
-共 8 關，從 4 格到 11 格，點錯只扣分、不扣生命。
+黃色格子亮幾秒，記住它們的位置；棋盤轉暗後把剛才亮過的格子全部點回來。
 同一關連續點錯 2 次，還沒找到的格子會再閃一次當提示。
+連續點對會累積連擊倍率，最高 ×3。
 
-Vite + Vue 3 + TypeScript + 原生 CSS，沒有 UI 框架、沒有音檔。
+Vite + Vue 3 + TypeScript + 原生 CSS，沒有 UI 框架、沒有音檔、沒有後端。
+
+## 三種模式
+
+| 模式     | 內容                                                                     |
+| -------- | ------------------------------------------------------------------------ |
+| 經典     | 8 關，4 → 11 格，每次都是新盤面。點錯只扣分、不扣生命                    |
+| 每日挑戰 | 用日期當亂數種子，同一天全世界拿到同一盤。每天記一次成績，並累計連續天數 |
+| 無盡     | 格數一路加到 18 格、記憶時間一路縮到 1.5 秒，3 條命用完就結束            |
+
+每日挑戰的成績在「整局打完」時才寫進去，中途離開可以重來。所有紀錄都存在瀏覽器的
+`localStorage`，沒有伺服器也沒有排行榜。
 
 ## 開發
 
 ```bash
 npm install
 npm run dev       # 開發伺服器
-npm test          # Vitest 單元測試（遊戲邏輯）
+npm test          # Vitest 單元測試
 npm run lint      # ESLint
 npm run format    # Prettier
 npm run build     # 型別檢查 + 產出 dist/
@@ -25,40 +36,51 @@ npm run preview   # 預覽 build 結果
 ```
 src/
 ├─ game/
-│  ├─ config.ts      關卡與計分的所有常數（要調難度改這裡）
-│  ├─ logic.ts       純函式：選格、計分、評價
-│  └─ logic.test.ts  對應的單元測試
+│  ├─ config.ts       關卡、模式、連擊與計分的所有常數（要調難度改這裡）
+│  ├─ rng.ts          可注入種子的亂數產生器（mulberry32）
+│  ├─ daily.ts        每日挑戰：日期換算、題號、固定種子
+│  ├─ logic.ts        純函式：選格、計分、連擊倍率、各模式的關卡曲線
+│  ├─ scoreCard.ts    把成績畫成一張 1080×1080 的 PNG（純 canvas 繪圖）
+│  └─ *.test.ts       對應的單元測試
 ├─ composables/
-│  ├─ useGame.ts     遊戲狀態機（idle → memorize → recall → …）
-│  ├─ useGame.test.ts 狀態機的單元測試（連錯提示，用假時間）
-│  ├─ useSound.ts    Web Audio 即時合成音效，不需要任何音檔
-│  └─ useI18n.ts     中／英雙語文案
+│  ├─ useGame.ts      遊戲狀態機（idle → memorize → recall → …）
+│  ├─ useGame.test.ts 狀態機的單元測試，用假時間跑完整局
+│  ├─ useScoreCard.ts 產生成績卡並交給系統分享面板或下載
+│  ├─ useSound.ts     Web Audio 即時合成音效，不需要任何音檔
+│  └─ useI18n.ts      中／英雙語文案
 ├─ components/
-│  ├─ GameBoard.vue  5×5 格線
-│  ├─ TileCard.vue   單一格子，CSS 3D 翻牌
-│  ├─ HudBar.vue     標題列與計分板
-│  ├─ StartOverlay.vue
-│  └─ ResultOverlay.vue
+│  ├─ GameBoard.vue   5×5 格線
+│  ├─ TileCard.vue    單一格子，CSS 3D 翻牌
+│  ├─ HudBar.vue      標題列與計分板
+│  ├─ StartOverlay.vue 模式選單
+│  └─ ResultOverlay.vue 結算與成績卡
 └─ App.vue
 ```
 
 ## 計分
 
-| 項目       | 說明                                                |
-| ---------- | --------------------------------------------------- |
-| 基礎分     | 該關格數 × 100                                      |
-| 零失誤獎勵 | +200                                                |
-| 速度獎勵   | 每格 0.9 秒內完成拿滿 300，之後每 20ms 少 1 分      |
-| 失誤扣分   | 每次 −50（單關最低 0 分，不會扣到負的，也不扣生命） |
+| 項目       | 說明                                                                  |
+| ---------- | --------------------------------------------------------------------- |
+| 基礎分     | 該關格數 × 100                                                        |
+| 零失誤獎勵 | +200                                                                  |
+| 速度獎勵   | 每格 0.9 秒內完成拿滿 300，之後每 20ms 少 1 分                        |
+| 連擊獎勵   | 每格 40 ×（倍率 − 1）；倍率在連續 3／5／8／12 格時升到 1.5／2／2.5／3 |
+| 失誤扣分   | 每次 −50（單關最低 0 分，不會扣到負的）                               |
 
-最高分存在瀏覽器的 `localStorage`。
+連擊跨關不會斷，點錯才歸零。基礎分與速度獎勵的算法沒有變，連擊是額外加上去的。
 
 ## 想改難度？
 
-`src/game/config.ts` 裡：`START_TILES`（起始格數）、`TOTAL_LEVELS`（關卡數）、
-`MEMORIZE_MS`（記憶秒數）、`BOARD_SIZE`（棋盤邊長）、`HINT_AFTER_MISSES`（連錯幾次
-給提示）、`HINT_MS`（提示亮多久）。改完 `npm test` 會驗證最後一關的格數仍然少於
-總格數，以及連錯提示的觸發與收回。
+`src/game/config.ts` 裡：
+
+- `START_TILES`、`TOTAL_LEVELS`、`MEMORIZE_MS`、`BOARD_SIZE` — 經典與每日的關卡曲線
+- `HINT_AFTER_MISSES`、`HINT_MS` — 連錯幾次給提示、提示亮多久
+- `ENDLESS_MAX_TILES`、`ENDLESS_MEMORIZE_STEP_MS`、`ENDLESS_MIN_MEMORIZE_MS`、`ENDLESS_MAX_MISSES` — 無盡模式
+- `COMBO_TIERS`、`COMBO_BONUS_PER_TILE` — 連擊倍率與獎勵
+- `DAILY_EPOCH` — 每日挑戰 #1 是哪一天
+
+改完 `npm test` 會驗證關卡曲線單調、格數不超過棋盤、連擊分段由高到低排好，以及每日挑戰
+同一天重跑會拿到同一盤。
 
 ## 部署
 
