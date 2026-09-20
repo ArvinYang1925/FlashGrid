@@ -7,6 +7,7 @@
 連續點對會累積連擊倍率，最高 ×3。
 
 Vite + Vue 3 + TypeScript + 原生 CSS，沒有 UI 框架、沒有音檔、沒有後端。
+把網址貼到 LINE、Threads、Discord 或 Facebook 會自動展開成預覽卡。
 
 ## 三種模式
 
@@ -55,7 +56,15 @@ src/
 │  ├─ StartOverlay.vue 模式選單
 │  └─ ResultOverlay.vue 結算與成績卡
 └─ App.vue
+
+public/
+├─ og.png             1200×630 社群預覽圖
+├─ favicon.svg        分頁圖示
+└─ apple-touch-icon.png  加到主畫面時的圖示
 ```
+
+`public/` 的檔案會原封不動複製到 `dist/` 根目錄。`index.html` 的 `og:image` 走絕對網址，
+因為爬蟲不會照著相對路徑走；換網域時記得一起改。
 
 ## 計分
 
